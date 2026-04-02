@@ -213,8 +213,9 @@
         "<h3>" + p.name + "</h3>" +
         "<div class='price'>$" + p.price + "</div>" +
         "<div class='stock'>Stock: " + p.stock + "</div>" +
+        // BUG: intentionally never adds disabled attribute — both branches return ""
         "<button onclick='addToCart(" + p.id + ")'" +
-          (p.stock === 0 ? "" : "") + // intentionally never disables
+          (p.stock === 0 ? "" : "") +
         ">Add to Cart</button>";
       grid.appendChild(card);
     });
@@ -261,7 +262,7 @@
       const product = PRODUCTS.find(function(p) { return p.id === item.productId; });
       if (!product) return;
 
-      // BUG: subtotal is calculated with addition instead of multiplication
+      // BUG: subtotal uses addition instead of multiplication (should be price * qty)
       const subtotal = (product.price + item.qty).toFixed(2);
 
       const li = document.createElement("li");
@@ -306,7 +307,7 @@
     cart.forEach(function(item) {
       const product = PRODUCTS.find(function(p) { return p.id === item.productId; });
       if (product) {
-        // BUG: same addition-instead-of-multiplication bug as in renderCart
+        // BUG: uses addition instead of multiplication (should be price * qty) — same as renderCart
         subtotal += product.price + item.qty;
       }
     });
