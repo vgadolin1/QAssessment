@@ -1,4 +1,4 @@
-# How to run dummy project template
+# How to run QAssessment
 
 1. Clone repository: \
     `git clone https://github.com/vgadolin1/QAssessment.git`
