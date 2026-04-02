@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniShop – QA Assessment</title>
+  <style>
+    /* ── Reset & base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }
+
+    /* ── Banner / instructions ──────────────────────────────────── */
+    #banner {
+      background: #1a1a2e; color: #e0e0e0;
+      padding: 20px 30px; border-bottom: 4px solid #e94560;
+    }
+    #banner h1 { font-size: 1.4rem; margin-bottom: 8px; color: #e94560; }
+    #banner p  { font-size: 0.9rem; line-height: 1.5; max-width: 860px; }
+    #banner ul { margin: 8px 0 0 20px; font-size: 0.85rem; line-height: 1.8; }
+
+    /* ── App shell ──────────────────────────────────────────────── */
+    #app { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+
+    /* ── Controls row ───────────────────────────────────────────── */
+    #controls {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center; margin-bottom: 20px;
+    }
+    #controls input[type="text"] {
+      flex: 1; min-width: 180px; padding: 8px 12px;
+      border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem;
+    }
+    #controls select, #controls button {
+      padding: 8px 14px; border: 1px solid #ccc;
+      border-radius: 4px; font-size: 0.95rem; cursor: pointer;
+    }
+    #controls button { background: #e94560; color: #fff; border-color: #e94560; }
+
+    /* ── Product grid ───────────────────────────────────────────── */
+    #product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .product-card {
+      background: #fff; border-radius: 6px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .product-card h3 { font-size: 1rem; }
+    .product-card .price { font-size: 1.1rem; color: #e94560; font-weight: bold; }
+    .product-card .stock { font-size: 0.8rem; color: #777; }
+    .product-card button {
+      margin-top: auto; padding: 7px 0; background: #1a1a2e;
+      color: #fff; border: none; border-radius: 4px; cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .product-card button:disabled { background: #999; cursor: not-allowed; }
+
+    /* ── Cart ───────────────────────────────────────────────────── */
+    #cart-section {
+      background: #fff; border-radius: 6px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12); margin-top: 28px;
+    }
+    #cart-section h2 { margin-bottom: 14px; color: #1a1a2e; }
+    #cart-items { list-style: none; margin-bottom: 16px; }
+    #cart-items li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #eee; flex-wrap: wrap;
+    }
+    #cart-items li:last-child { border-bottom: none; }
+    #cart-items .item-name  { flex: 1; min-width: 120px; }
+    #cart-items .qty-ctrl   { display: flex; align-items: center; gap: 6px; }
+    #cart-items .qty-ctrl button {
+      width: 26px; height: 26px; font-size: 1rem; font-weight: bold;
+      border: 1px solid #ccc; background: #f0f0f0;
+      cursor: pointer; border-radius: 3px;
+    }
+    #cart-items .qty-ctrl span { min-width: 24px; text-align: center; }
+    #cart-items .item-subtotal { min-width: 70px; text-align: right; font-weight: bold; }
+    #cart-items .remove-btn {
+      background: none; border: none; color: #e94560;
+      font-size: 1.1rem; cursor: pointer; padding: 0 4px;
+    }
+
+    /* ── Cart summary ───────────────────────────────────────────── */
+    #cart-summary { display: flex; flex-direction: column; gap: 8px; max-width: 340px; margin-left: auto; }
+    #cart-summary label { font-size: 0.9rem; }
+    #cart-summary input[type="text"] {
+      padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px;
+      font-size: 0.9rem; width: 100%;
+    }
+    #cart-summary .totals { font-size: 0.95rem; }
+    #cart-summary .totals div { display: flex; justify-content: space-between; padding: 3px 0; }
+    #cart-summary .totals .grand { font-weight: bold; font-size: 1.05rem; border-top: 1px solid #ccc; padding-top: 6px; }
+    #checkout-btn {
+      padding: 10px; background: #e94560; color: #fff;
+      border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;
+    }
+    #checkout-btn:disabled { background: #ccc; cursor: not-allowed; }
+    #cart-msg { font-size: 0.85rem; color: #e94560; min-height: 18px; }
+    #coupon-msg { font-size: 0.82rem; min-height: 16px; }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a2e; color: #fff; padding: 10px 18px;
+      border-radius: 4px; font-size: 0.9rem;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ INSTRUCTIONS BANNER ═══════════════ -->
+<div id="banner">
+  <h1>🛒 MiniShop – QA Assessment</h1>
+  <p>
+    Welcome, QA candidate! Below is a small e-commerce application called <strong>MiniShop</strong>.
+    Your task is to <strong>explore the app and document as many bugs as you can find</strong>.
+    The application has been intentionally written with defects — do <em>not</em> try to fix them;
+    just report what you observe.
+  </p>
+  <ul>
+    <li>Browse the product catalogue, add items to the cart, adjust quantities, and apply discount codes.</li>
+    <li>Test edge cases: empty cart, large quantities, invalid inputs, boundary values, etc.</li>
+    <li>Note the <strong>expected behaviour</strong> vs the <strong>actual behaviour</strong> for each bug you find.</li>
+    <li>Submit your bug report as instructed by your interviewer.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════ APP ═══════════════════════════════ -->
+<div id="app">
+
+  <!-- Controls -->
+  <div id="controls">
+    <input type="text" id="search-input" placeholder="Search products…" oninput="filterProducts()" />
+    <select id="sort-select" onchange="sortProducts()">
+      <option value="default">Sort: Default</option>
+      <option value="price-asc">Price: Low → High</option>
+      <option value="price-desc">Price: High → Low</option>
+      <option value="name-asc">Name: A → Z</option>
+    </select>
+    <button onclick="clearCart()">Clear Cart</button>
+  </div>
+
+  <!-- Product grid -->
+  <div id="product-grid"></div>
+
+  <!-- Cart -->
+  <div id="cart-section">
+    <h2>Cart (<span id="cart-count">0</span> items)</h2>
+    <ul id="cart-items"><li id="cart-empty-msg" style="color:#999;border:none;">Your cart is empty.</li></ul>
+
+    <div id="cart-summary">
+      <div class="totals">
+        <div><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+        <div><span>Discount</span><span id="discount-display">-$0.00</span></div>
+        <div class="grand"><span>Total</span><span id="grand-total">$0.00</span></div>
+      </div>
+      <label for="coupon-input">Coupon code:</label>
+      <input type="text" id="coupon-input" placeholder="e.g. SAVE10" />
+      <button onclick="applyCoupon()">Apply Coupon</button>
+      <div id="coupon-msg"></div>
+      <div id="cart-msg"></div>
+      <button id="checkout-btn" onclick="checkout()">Checkout</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- ═══════════════ JAVASCRIPT ════════════════════════ -->
+<script>
+  /* ── Product catalogue ──────────────────────────────────────── */
+  const PRODUCTS = [
+    { id: 1, name: "Wireless Mouse",      price: 29.99, stock: 10, category: "Electronics" },
+    { id: 2, name: "Mechanical Keyboard", price: 79.99, stock: 5,  category: "Electronics" },
+    { id: 3, name: "USB-C Hub",           price: 49.99, stock: 8,  category: "Electronics" },
+    { id: 4, name: "Desk Lamp",           price: 24.99, stock: 12, category: "Home"        },
+    { id: 5, name: "Notebook (A5)",       price: 7.99,  stock: 0,  category: "Stationery"  },
+    { id: 6, name: "Ballpoint Pens (10)", price: 4.99,  stock: 20, category: "Stationery"  },
+    { id: 7, name: "Monitor Stand",       price: 39.99, stock: 3,  category: "Home"        },
+    { id: 8, name: "Webcam HD",           price: 59.99, stock: 7,  category: "Electronics" },
+  ];
+
+  const COUPONS = { "SAVE10": 10, "HALF": 50, "WELCOME": 15 };
+
+  /* ── State ──────────────────────────────────────────────────── */
+  let cart = [];           // { productId, qty }
+  let discountPct = 0;
+  let displayedProducts = [...PRODUCTS];
+
+  /* ══════════════════════════════════════════════════════════════
+     BUG-LADEN IMPLEMENTATION
+     (intentional defects are present throughout)
+  ══════════════════════════════════════════════════════════════ */
+
+  /* ── Render product grid ────────────────────────────────────── */
+  function renderProducts() {
+    const grid = document.getElementById("product-grid");
+    grid.innerHTML = "";
+    displayedProducts.forEach(function(p) {
+      const inCart = cart.find(function(c) { return c.productId === p.id; });
+      const card = document.createElement("div");
+      card.className = "product-card";
+      // BUG: out-of-stock items still show "Add to Cart" (button should be disabled)
+      card.innerHTML =
+        "<h3>" + p.name + "</h3>" +
+        "<div class='price'>$" + p.price + "</div>" +
+        "<div class='stock'>Stock: " + p.stock + "</div>" +
+        "<button onclick='addToCart(" + p.id + ")'" +
+          (p.stock === 0 ? "" : "") + // intentionally never disables
+        ">Add to Cart</button>";
+      grid.appendChild(card);
+    });
+  }
+
+  /* ── Add to cart ────────────────────────────────────────────── */
+  function addToCart(productId) {
+    const product = PRODUCTS.find(function(p) { return p.id === productId; });
+    if (!product) return;
+
+    // BUG: stock check is inverted — allows adding out-of-stock, blocks in-stock
+    if (product.stock > 0) {
+      showToast(product.name + " is out of stock!");
+      return;
+    }
+
+    const existing = cart.find(function(c) { return c.productId === productId; });
+    if (existing) {
+      // BUG: no upper-bound check against available stock
+      existing.qty += 1;
+    } else {
+      cart.push({ productId: productId, qty: 1 });
+    }
+
+    renderCart();
+    // BUG: toast confirms add but the item may not have been added (see above)
+    showToast('Added "' + product.name + '" to cart');
+  }
+
+  /* ── Render cart ─────────────────────────────────────────────── */
+  function renderCart() {
+    const list    = document.getElementById("cart-items");
+    const emptyEl = document.getElementById("cart-empty-msg");
+    list.innerHTML = "";
+
+    if (cart.length === 0) {
+      list.appendChild(emptyEl);
+      updateTotals();
+      updateCartCount();
+      return;
+    }
+
+    cart.forEach(function(item, index) {
+      const product = PRODUCTS.find(function(p) { return p.id === item.productId; });
+      if (!product) return;
+
+      // BUG: subtotal is calculated with addition instead of multiplication
+      const subtotal = (product.price + item.qty).toFixed(2);
+
+      const li = document.createElement("li");
+      li.innerHTML =
+        "<span class='item-name'>" + product.name + "</span>" +
+        "<div class='qty-ctrl'>" +
+          "<button onclick='changeQty(" + index + ", -1)'>−</button>" +
+          "<span>" + item.qty + "</span>" +
+          "<button onclick='changeQty(" + index + ", 1)'>+</button>" +
+        "</div>" +
+        "<span class='item-subtotal'>$" + subtotal + "</span>" +
+        "<button class='remove-btn' onclick='removeItem(" + index + ")' title='Remove'>✕</button>";
+      list.appendChild(li);
+    });
+
+    updateTotals();
+    updateCartCount();
+  }
+
+  /* ── Change quantity ────────────────────────────────────────── */
+  function changeQty(index, delta) {
+    cart[index].qty += delta;
+
+    // BUG: qty can go to 0 or below — item should be removed when qty reaches 0
+    if (cart[index].qty < 0) {
+      cart[index].qty = 0;
+    }
+
+    renderCart();
+  }
+
+  /* ── Remove item ────────────────────────────────────────────── */
+  function removeItem(index) {
+    // BUG: splice removes TWO items instead of one
+    cart.splice(index, 2);
+    renderCart();
+  }
+
+  /* ── Update totals ──────────────────────────────────────────── */
+  function updateTotals() {
+    let subtotal = 0;
+    cart.forEach(function(item) {
+      const product = PRODUCTS.find(function(p) { return p.id === item.productId; });
+      if (product) {
+        // BUG: same addition-instead-of-multiplication bug as in renderCart
+        subtotal += product.price + item.qty;
+      }
+    });
+
+    const discountAmt = subtotal * (discountPct / 100);
+    // BUG: grand total adds the discount instead of subtracting it
+    const grandTotal  = subtotal + discountAmt;
+
+    document.getElementById("subtotal").textContent       = "$" + subtotal.toFixed(2);
+    document.getElementById("discount-display").textContent = "-$" + discountAmt.toFixed(2);
+    document.getElementById("grand-total").textContent    = "$" + grandTotal.toFixed(2);
+  }
+
+  /* ── Update cart count badge ────────────────────────────────── */
+  function updateCartCount() {
+    // BUG: counts unique product lines, not total quantity
+    document.getElementById("cart-count").textContent = cart.length;
+  }
+
+  /* ── Apply coupon ───────────────────────────────────────────── */
+  function applyCoupon() {
+    const code = document.getElementById("coupon-input").value.trim();
+    const msgEl = document.getElementById("coupon-msg");
+
+    // BUG: case-sensitive comparison — "save10" will not match "SAVE10"
+    if (COUPONS[code] !== undefined) {
+      discountPct = COUPONS[code];
+      msgEl.style.color = "green";
+      msgEl.textContent = "Coupon applied! " + discountPct + "% off.";
+    } else {
+      discountPct = 0;
+      msgEl.style.color = "red";
+      msgEl.textContent = "Invalid coupon code.";
+    }
+
+    // BUG: totals are not recalculated after applying the coupon
+  }
+
+  /* ── Checkout ───────────────────────────────────────────────── */
+  function checkout() {
+    const msgEl = document.getElementById("cart-msg");
+    if (cart.length === 0) {
+      msgEl.textContent = "Your cart is empty!";
+      return;
+    }
+    // BUG: checkout clears the coupon message but not the applied discount state
+    document.getElementById("coupon-msg").textContent = "";
+    cart = [];
+    discountPct = 0;
+    // BUG: page does not show a success message to the user after checkout
+    renderCart();
+  }
+
+  /* ── Clear cart ─────────────────────────────────────────────── */
+  function clearCart() {
+    cart = [];
+    discountPct = 0;
+    document.getElementById("coupon-input").value = "";
+    document.getElementById("coupon-msg").textContent = "";
+    // BUG: cart-msg error text is not cleared when cart is cleared
+    renderCart();
+  }
+
+  /* ── Filter products ────────────────────────────────────────── */
+  function filterProducts() {
+    const query = document.getElementById("search-input").value.toLowerCase();
+    // BUG: filter checks .category instead of .name, so typing a product name won't find it
+    displayedProducts = PRODUCTS.filter(function(p) {
+      return p.category.toLowerCase().includes(query);
+    });
+    renderProducts();
+  }
+
+  /* ── Sort products ──────────────────────────────────────────── */
+  function sortProducts() {
+    const val = document.getElementById("sort-select").value;
+    if (val === "price-asc") {
+      // BUG: sorts descending instead of ascending (b - a vs a - b)
+      displayedProducts.sort(function(a, b) { return b.price - a.price; });
+    } else if (val === "price-desc") {
+      displayedProducts.sort(function(a, b) { return a.price - b.price; });
+    } else if (val === "name-asc") {
+      displayedProducts.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    } else {
+      displayedProducts = [...PRODUCTS];
+      filterProducts();   // re-apply active search filter
+      return;
+    }
+    renderProducts();
+  }
+
+  /* ── Toast helper ───────────────────────────────────────────── */
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    // BUG: timeout is 500 ms — far too short for users to read
+    setTimeout(function() { toast.classList.remove("show"); }, 500);
+  }
+
+  /* ── Initial render ─────────────────────────────────────────── */
+  renderProducts();
+  renderCart();
+</script>
+
+</body>
+</html>
